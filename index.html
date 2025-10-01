@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система ИИ для анализа КТ ОГК</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007bff; /* Мягкий синий */
+            --secondary-color: #28a745; /* Зелёный для успеха */
+            --bg-color: #f4f7fa; /* Светлый фон */
+            --text-color: #1a1a2e; /* Тёмный текст */
+            --card-bg: #ffffff;
+            --drop-zone-bg: #e6f0fa;
+            --drop-zone-border: #b8c7e0;
+            --accent-color: #17a2b8; /* Бирюзовый акцент */
+            --table-header-bg: #e9ecef;
+            --table-border: #dee2e6;
+        }
+
+        .dark {
+            --primary-color: #4dabf7; /* Светло-синий */
+            --secondary-color: #51cf66; /* Зелёный */
+            --bg-color: #1a1a2e; /* Тёмный фон */
+            --text-color: #f8f9fa; /* Очень светлый текст для контраста */
+            --card-bg: #2c2c3e;
+            --drop-zone-bg: #3b3b4f;
+            --drop-zone-border: #5c5c7b;
+            --accent-color: #22b8cf;
+            --table-header-bg: #3b3b4f;
+            --table-border: #5c5c7b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .theme-toggle button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .theme-toggle button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .drop-zone {
+            background-color: var(--drop-zone-bg);
+            border: 3px dashed var(--drop-zone-border);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            background-color: #d1e7ff;
+            border-color: var(--primary-color);
+        }
+
+        .dark .drop-zone:hover, .dark .drop-zone.dragover {
+            background-color: #4a4a66;
+            border-color: var(--primary-color);
+        }
+
+        .file-list {
+            margin-top: 1rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .dark .file-item {
+            background-color: #3b3b4f;
+        }
+
+        .file-item i {
+            margin-right: 0.5rem;
+            color: var(--accent-color);
+        }
+
+        .result-success {
+            color: var(--secondary-color);
+        }
+
+        .result-danger {
+            color: #dc3545;
+        }
+
+        .progress {
+            height: 25px;
+            border-radius: 12px;
+            background-color: #e9ecef;
+        }
+
+        .dark .progress {
+            background-color: #3b3b4f;
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+
+        .btn-clear {
+            background-color: #6c757d;
+            color: white;
+            border-radius: 20px;
+        }
+
+        .btn-clear:hover {
+            background-color: #5a6268;
+        }
+
+        .table {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table th {
+            background-color: var(--table-header-bg);
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        .table-bordered {
+            border: 1px solid var(--table-border);
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid var(--table-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="header">
+            <h1><i class="fas fa-stethoscope me-2"></i>Система ИИ для анализа КТ ОГК</h1>
+            <div class="theme-toggle">
+                <button id="themeSwitch" class="btn"><i class="fas fa-moon"></i> Тёмная тема</button>
+            </div>
+        </div>
+        <p class="text-center lead mb-5">Загрузите ZIP-архивы с DICOM-файлами для анализа на норму или патологию.</p>
+        
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-upload fa-3x mb-3"></i>
+                    <p>Перетащите ZIP-архивы сюда или нажмите, чтобы выбрать</p>
+                    <p class="text-muted">Поддерживаемые форматы: ZIP с DICOM-файлами (.dcm)</p>
+                    <input type="file" id="fileInput" class="d-none" accept=".zip" multiple>
+                </div>
+                <div class="file-list" id="fileList"></div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-primary btn-lg w-50" id="analyzeButton" disabled>Анализировать</button>
+                    <button class="btn btn-clear btn-lg w-50" id="clearButton" disabled>Очистить</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mt-5 d-none" id="resultSection">
+            <div class="card-body">
+                <h3 class="card-title">Результат анализа</h3>
+                <div class="progress" id="progressBar">
+                    <div class="progress-bar bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+                <p id="resultText" class="fs-4"></p>
+                <p id="confidenceText" class="fs-5"></p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Путь</th>
+                                <th>Study UID</th>
+                                <th>Series UID</th>
+                                <th>Вероятность патологии</th>
+                                <th>Патология</th>
+                                <th>Статус</th>
+                                <th>Время (с)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTable"></tbody>
+                    </table>
+                </div>
+                <a id="downloadReport" class="btn btn-success w-100 mt-3 d-none" href="#">Скачать отчёт (XLSX)</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const clearButton = document.getElementById('clearButton');
+        const fileList = document.getElementById('fileList');
+        const resultSection = document.getElementById('resultSection');
+        const resultText = document.getElementById('resultText');
+        const confidenceText = document.getElementById('confidenceText');
+        const downloadReport = document.getElementById('downloadReport');
+        const reportTable = document.getElementById('reportTable');
+        const progressBar = document.getElementById('progressBar').querySelector('.progress-bar');
+        const themeSwitch = document.getElementById('themeSwitch');
+
+        // Отображение выбранных файлов
+        function updateFileList() {
+            fileList.innerHTML = '';
+            Array.from(fileInput.files).forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `<i class="fas fa-file-archive"></i> ${file.name}`;
+                fileList.appendChild(div);
+            });
+            analyzeButton.disabled = !fileInput.files.length;
+            clearButton.disabled = !fileInput.files.length;
+        }
+
+        // Drag-and-drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            updateFileList();
+        });
+
+        fileInput.addEventListener('change', updateFileList);
+
+        // Очистка списка файлов
+        clearButton.addEventListener('click', () => {
+            fileInput.value = '';
+            updateFileList();
+            resultSection.classList.add('d-none');
+            downloadReport.classList.add('d-none');
+            reportTable.innerHTML = '';
+        });
+
+        // Анализ
+        analyzeButton.addEventListener('click', async () => {
+            const formData = new FormData();
+            Array.from(fileInput.files).forEach(file => formData.append('files', file));
+
+            try {
+                analyzeButton.disabled = true;
+                clearButton.disabled = true;
+                analyzeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализирую...';
+                resultSection.classList.remove('d-none');
+                progressBar.style.width = '10%';
+                progressBar.textContent = '10%';
+
+                // Имитация прогресса
+                let progress = 10;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressBar.style.width = `${progress}%`;
+                        progressBar.textContent = `${progress}%`;
+                    }
+                }, 500);
+
+                const response = await fetch('http://localhost:8000/process/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressBar.textContent = '100%';
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                const data = await response.json();
+                resultText.textContent = `Обработка завершена: ${fileInput.files.length} архив(ов) обработано`;
+                resultText.className = 'result-success';
+                confidenceText.textContent = 'Отчёт готов к скачиванию';
+                downloadReport.href = `http://localhost:8000/download/${data.report_path}`;
+                downloadReport.classList.remove('d-none');
+
+                // Заполнение таблицы
+                reportTable.innerHTML = '';
+                data.report_data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.path_to_study}</td>
+                        <td>${row.study_uid}</td>
+                        <td>${row.series_uid}</td>
+                        <td>${(row.probability_of_pathology * 100).toFixed(2)}%</td>
+                        <td class="${row.pathology ? 'result-danger' : 'result-success'}">${row.pathology ? 'ПАТОЛОГИЯ' : 'НОРМА'}</td>
+                        <td class="${row.processing_status.startsWith('Success') ? 'result-success' : 'result-danger'}">${row.processing_status}</td>
+                        <td>${row.time_of_processing.toFixed(2)}</td>
+                    `;
+                    reportTable.appendChild(tr);
+                });
+            } catch (e) {
+                clearInterval(progressInterval);
+                resultText.textContent = `Ошибка: ${e.message}`;
+                resultText.className = 'result-danger';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+            } finally {
+                analyzeButton.disabled = false;
+                clearButton.disabled = false;
+                analyzeButton.innerHTML = 'Анализировать';
+            }
+        });
+
+        // Переключение темы
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (localStorage.getItem('darkMode') === 'true' || (prefersDark && localStorage.getItem('darkMode') !== 'false')) {
+            document.body.classList.add('dark');
+            themeSwitch.innerHTML = '<i class="fas fa-sun"></i> Светлая тема';
+        }
+
+        themeSwitch.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+            themeSwitch.innerHTML = isDark ? '<i class="fas fa-sun"></i> Светлая тема' : '<i class="fas fa-moon"></i> Тёмная тема';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+torch
+torchvision
+pydicom
+opencv-python
+pillow
+albumentations
+pandas
+openpyxl
+pydantic
+numpy
+matplotlib
+scikit-learn
+seaborn
+tqdm
+python-multipart
